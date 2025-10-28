@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NTD Vending Machine - Maximum Aesthetic</title>
+    
+    <style>
+        /* Neumorphism Base */
+        :root {
+            --bg-color: #ecf0f3;
+            --main-color: #2c3e50;
+            --light-shadow: #ffffff;
+            --dark-shadow: #c8d0e7;
+            --accent-color: #f39c12; 
+            --success-color: #2ecc71;
+            --error-color: #e74c3c;
+            --product-fall-distance: 250px; 
+            --animation-duration: 1.0s; 
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center; 
+            min-height: 100vh; /* Center vertically on page */
+            background-color: var(--bg-color);
+            padding: 20px; 
+            margin: 0;
+            color: var(--main-color);
+        }
+
+        /* Vending Machine Container - Wider and more prominent */
+        .vending-machine {
+            width: 1000px; /* Increased width for spacious look */
+            padding: 20px; 
+            border-radius: 20px;
+            background: var(--bg-color);
+            box-shadow: 10px 10px 30px var(--dark-shadow), 
+                        -10px -10px 30px var(--light-shadow);
+            position: relative;
+            overflow: hidden; 
+        }
+
+        h1 {
+            text-align: left; /* Aligned left for a modern header look */
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 1.8em; 
+            /* Correctly set the color to the main dark color for the machine title */
+            color: var(--main-color); 
+        }
+
+      /* 2. Style for the High-Contrast Display Screen (image_6ce8c5.png) */
+        .display-screen {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 45px;
+            padding: 5px 15px;
+            margin-top: 10px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            background-color: #34495e; /* Dark background */
+            color: #00ff40; /* Neon green text */
+            font-family: 'Consolas', monospace;
+            box-shadow: inset 3px 3px 8px rgba(0, 0, 0, 0.4), inset -3px -3px 8px rgba(255, 255, 255, 0.1);
+        }
+        
+        #message { 
+            margin: 0; 
+            font-weight: bold; 
+            font-size: 1.2em; 
+        }
+        
+        #balance { 
+            font-size: 1.4em; 
+            font-weight: 700;
+        }
+
+        /* --- LANDSCAPE LAYOUT GRID --- */
+        .main-content-grid {
+            display: grid;
+            grid-template-columns: 3fr 1fr; /* Products take up more space */
+            gap: 20px; 
+        }
+
+        /* Products Grid Area - Spacious Gallery */
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr); 
+            gap: 12px; /* Increased gap */
+            padding: 10px; 
+            border-radius: 12px;
+            /* Subtle recess for the entire product area */
+            box-shadow: inset 3px 3px 7px var(--dark-shadow), inset -3px -3px 7px var(--light-shadow);
+        }
+
+        /* Product Card - Enhanced Aesthetics */
+        .product-card {
+            background: var(--bg-color);
+            padding: 10px; /* Increased padding */
+            border-radius: 12px; 
+            text-align: center;
+            min-height: 180px; /* Uniform height for visual stability */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between; /* Push image up, text down */
+            box-shadow: 5px 5px 10px var(--dark-shadow), -5px -5px 10px var(--light-shadow);
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .product-card:active {
+            box-shadow: inset 3px 3px 7px var(--dark-shadow), inset -3px -3px 7px var(--light-shadow);
+            transform: translateY(1px); 
+        }
+        .product-card.sold-out { 
+            opacity: 0.5; 
+            cursor: not-allowed; 
+            background-color: #f7f7f7; 
+        }
+        .product-card img { 
+            width: 70px; /* Larger image */
+            height: 90px; 
+            object-fit: contain; 
+            border-radius: 5px; 
+            margin: 0 auto 10px auto; 
+            background-color: #ecf0f3; 
+        }
+        
+        .product-info p { 
+            margin: 0; 
+            line-height: 1.3;
+        }
+        .code { 
+            font-weight: 900; 
+            color: var(--accent-color); 
+            font-size: 0.9em; 
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
+        }
+        .name { 
+            font-size: 0.8em; 
+            color: var(--main-color);
+        }
+        .price { 
+            color: var(--success-color); 
+            font-size: 0.9em; 
+            font-weight: bold;
+        }
+        .sold-out .price { 
+            color: var(--error-color); 
+            font-size: 1.1em;
+            font-weight: 900;
+        }
+
+
+        /* Controls/Output Area Container - Focused and Compact */
+        .controls-output-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px; 
+            padding: 10px; 
+        }
+        
+        /* Keypad Styling */
+        .keypad, .payment-controls { 
+            padding: 12px; 
+            border-radius: 12px; 
+            background: var(--bg-color); 
+            box-shadow: 6px 6px 12px var(--dark-shadow), -6px -6px 12px var(--light-shadow); 
+        }
+        
+        .keypad-display { 
+            height: 20px; 
+            background-color: #ecf0f3; 
+            padding: 8px 10px; 
+            margin-bottom: 10px; 
+            border-radius: 8px; 
+            border: 1px solid var(--dark-shadow); 
+            text-align: right; 
+            font-size: 1.2em; 
+            color: var(--main-color);
+            box-shadow: inset 2px 2px 5px var(--dark-shadow); 
+        }
+
+        .keypad-grid { 
+            display: grid; 
+            grid-template-columns: repeat(4, 1fr); 
+            gap: 10px; /* Balanced spacing */
+        }
+        
+        /* Consistent Button Styling */
+        .key-btn, .control-btn, .coin-btn { 
+            padding: 12px 0; 
+            border-radius: 10px; 
+            font-weight: 600; 
+            box-shadow: 3px 3px 7px var(--dark-shadow), -3px -3px 7px var(--light-shadow);
+        }
+        
+        .key-btn:active, .control-btn:active, .coin-btn:active { 
+            box-shadow: inset 2px 2px 5px var(--dark-shadow), inset -2px -2px 5px var(--light-shadow); 
+            transform: translateY(1px); 
+        }
+
+        /* Keypad Specific Layout */
+        #clear-btn { 
+            grid-column: 1 / span 2; 
+            background-color: var(--error-color); 
+            color: white; 
+            font-size: 1em;
+        }
+        #enter-btn { 
+            grid-column: 3 / span 2; 
+            background-color: var(--success-color); 
+            color: white; 
+            font-size: 1em;
+        }
+        /* Buttons 5 and 6 are placed on the 3rd row (after 1-4) by HTML flow */
+        
+        /* Payment Controls Arrangement */
+        .payment-controls-top {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr); 
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .coin-btn { 
+            background-color: #3498db; 
+            color: white; 
+            font-size: 0.9em;
+            padding: 10px 0; 
+            grid-column: span 1; /* Ensure 5 coin buttons are the main focus */
+        }
+        /* Style the last two coin buttons to wrap cleanly */
+        .payment-controls-top :nth-child(4) { grid-column: 1; }
+        .payment-controls-top :nth-child(5) { grid-column: 2; }
+        .payment-controls-top :nth-child(6) { display: none; } /* Hide the placeholder div */
+
+        
+        .payment-controls-bottom {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        #credit-card-btn, #return-change-btn {
+            padding: 12px 0; 
+            font-size: 1em; 
+            color: white;
+            box-shadow: 4px 4px 8px var(--dark-shadow), -4px -4px 8px var(--light-shadow); 
+        }
+        #credit-card-btn { background-color: #3498db; }
+        #return-change-btn { background-color: var(--accent-color); }
+
+
+        /* Output Tray - Cleaner Text Box */
+        .output-tray { 
+            padding: 15px; 
+            border-radius: 12px; 
+            background: #ecf0f3; 
+            box-shadow: inset 3px 3px 6px var(--dark-shadow), inset -3px -3px 6px var(--light-shadow); 
+            flex-grow: 1; 
+        }
+        .output-tray p { 
+            margin: 0; 
+            line-height: 1.6;
+            font-size: 0.9em;
+        }
+        #dispensed-item, #change-returned { 
+            font-weight: bold; 
+            color: var(--main-color); 
+        }
+        #change-returned {
+            color: var(--success-color);
+        }
+        #change-details, #transaction-receipt {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px dashed #bbb;
+            font-size: 0.7em;
+            color: #555;
+            white-space: pre-wrap;
+            font-family: 'Consolas', monospace;
+        }
+
+
+        /* --- Product Drop Animation --- */
+        #dispensed-product-animation {
+            position: absolute;
+            z-index: 100;
+            display: none;
+            transform: translateX(-50%); 
+        }
+
+        #animated-product-image {
+            width: 50px; 
+            height: 50px;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.3); 
+        }
+        
+        @keyframes productDrop {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+            80% { transform: translateY(var(--product-fall-distance)) rotate(10deg); opacity: 1; }
+            100% { transform: translateY(calc(var(--product-fall-distance) + 20px)) rotate(5deg); opacity: 0; }
+        }
+        
+        .vm-footer {
+            margin-top:20px !important; 
+            padding:10px 0 !important;
+            border-top:1px solid var(--dark-shadow) !important;
+            text-align:center;
+            font-size:0.75em !important;
+            color:#6b6f76;
+            background:linear-gradient(180deg, rgba(236,240,243,0.95), rgba(236,240,243,0.9));
+            border-bottom-left-radius:18px;
+            border-bottom-right-radius:18px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="vending-machine">
+
+        <h1>NTD Smart Vending Station 🇹🇼</h1>
+
+        <div class="display-screen">
+            <p id="message">Welcome! Please enter code or insert money.</p>
+            <span id="balance">TWD 0</span>
+        </div>
+        
+        <div id="dispensed-product-animation">
+            <img id="animated-product-image" src="" alt="Dispensed Item">
+        </div>
+
+        <div class="main-content-grid">
+            
+            <div id="products-grid" class="products-grid">
+                </div>
+
+            <div class="controls-output-container">
+                <div class="input-payment-area">
+                    
+                    <div class="keypad">
+                        <div id="keypad-input" class="keypad-display"></div>
+                        <div class="keypad-grid">
+                            <button class="key-btn" data-key="A">A</button>
+                            <button class="key-btn" data-key="B">B</button>
+                            <button class="key-btn" data-key="C">C</button>
+                            <button class="key-btn" data-key="D">D</button>
+                            <button class="key-btn" data-key="1">1</button>
+                            <button class="key-btn" data-key="2">2</button>
+                            <button class="key-btn" data-key="3">3</button>
+                            <button class="key-btn" data-key="4">4</button>
+                            <button id="clear-btn" class="control-btn">CLEAR</button>
+                            <button id="enter-btn" class="control-btn" data-key="Enter">ENTER</button>
+                        </div>
+                    </div>
+
+                    <div class="payment-controls">
+                        <div class="payment-controls-top">
+                            <button class="coin-btn" data-value="100">TWD 100</button>
+                            <button class="coin-btn" data-value="50">TWD 50</button>
+                            <button class="coin-btn" data-value="10">TWD 10</button>
+                            <button class="coin-btn" data-value="5">TWD 5</button>
+                            <button class="coin-btn" data-value="1">TWD 1</button>
+                            <div style="background:none; box-shadow:none;"></div>
+                        </div>
+                        <div class="payment-controls-bottom">
+                            <button id="credit-card-btn" class="control-btn">💳 PAY WITH CARD</button> 
+                            <button id="return-change-btn" class="control-btn">RETURN MONEY</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="output-tray">
+                    <p>Dispensed Item: <span id="dispensed-item">---</span></p>
+                    <p>Change: <span id="change-returned">TWD 0</span></p>
+                    <pre id="change-details"></pre>
+                    <pre id="transaction-receipt"></pre>
+                </div>
+            </div>
+            
+        </div>
+        
+    <div class="vm-footer">© 安貝雅 2025</div>
+    </div>
+
+    <script>
+        // Global Constants
+        const CURRENCY_SYMBOL = 'TWD'; 
+        const DENOMINATIONS = [100, 50, 10, 5, 1];
+        const ANIMATION_DURATION_MS = 1000; 
+
+        // Vending machine state variables
+        let currentBalance = 0;
+        let keypadValue = '';
+        
+        // Product inventory (code: {name, price, stock, image_url})
+        const inventory = {
+            'A1': { name: 'Cola', price: 35, stock: 5, image_url: 'https://cdn.shopify.com/s/files/1/0372/4450/2149/products/4946406_coke-cola-origina-lata-12-oz-355-ml-011_994x994.jpg?v=1588181236' },
+            'A2': { name: 'Water', price: 20, stock: 10, image_url: 'https://i5.walmartimages.com/asr/83568193-2418-40f0-8367-4fd80481e2f8_1.fc5284020d9e9b9bcd45d777a9e62bb5.jpeg' },
+            'A3': { name: 'Iced Tea', price: 30, stock: 7, image_url: 'https://secretmenus.com/wp-content/uploads/2017/12/iced-tea-with-natural-lemon-flavor-bottle.jpeg' },
+            'A4': { name: 'Energy Drink', price: 60, stock: 3, image_url: 'https://i5.walmartimages.com/asr/a56c7715-b9a5-41b0-bd30-5655b6595e6e.da46a95feb588b745555829a7acba115.jpeg' },
+            'B1': { name: 'Juice', price: 40, stock: 3, image_url: 'https://i5.walmartimages.com/asr/e4c7bcc5-0839-403e-a754-d184a89c9ccd.822a8b6a573ef05a7b62ebd8f14685c8.jpeg?odnWidth=1000&odnHeight=1000&odnBg=ffffff' },
+            'B2': { name: 'Chips', price: 25, stock: 0, image_url: 'https://media.doitcenter.com.pa/media/catalog/product/9/9/99ah589051_2utsl0towmofltbx.jpg?quality=85&fit=bounds&height=&width=3840&auto=webp&format=pjpg' }, 
+            'B3': { name: 'Candy Bar', price: 15, stock: 12, image_url: 'https://shop.hersheys.com/dw/image/v2/BCVS_PRD/on/demandware.static/-/Sites-master-us/default/dw4938ccbe/images/hi-res/034000195411_1.jpg?sw=1500&sh=1500&sm=fit' },
+            'B4': { name: 'Sandwich', price: 80, stock: 2, image_url: 'https://tse2.mm.bing.net/th/id/OIP.jgIpm5pZfAOt4INp-UKV5QHaGe?pid=Api&P=0&h=180' },
+            'C1': { name: 'Coffee', price: 50, stock: 8, image_url: 'https://i5.walmartimages.com/seo/Starbucks-Frappuccino-Caramel-Iced-Coffee-Drink-13-7-fl-oz-Bottle_926f5a61-b2bf-4a05-9dd9-b07c96740952_1.2304c9cae6b27d1de63cb110f09a24de.jpeg' },
+            'C2': { name: 'Milk Tea', price: 45, stock: 6, image_url: 'https://www.ochaski.com/wp-content/uploads/2022/07/Kirin-Milk-Tea-Made-in-Japan3.jpg' },
+            'C3': { name: 'Pudding', price: 70, stock: 4, image_url: 'https://bakewithshivesh.com/wp-content/uploads/2023/04/IMG_0052-scaled.jpg' },
+            'C4': { name: 'Cookie', price: 28, stock: 9, image_url: 'https://caffeinecam.com/cdn/shop/files/000667210281051__36582.1686066584.1280.1280.jpg?v=1689689118' },
+        };
+        
+        // DOM Elements Map 
+        const DOM = {};
+
+        function getDOMElements() {
+            DOM.balanceDisplay = document.getElementById('balance');
+            DOM.messageDisplay = document.getElementById('message');
+            DOM.dispensedItemDisplay = document.getElementById('dispensed-item');
+            DOM.changeReturnedDisplay = document.getElementById('change-returned');
+            DOM.changeDetailsDisplay = document.getElementById('change-details');
+            DOM.transactionReceipt = document.getElementById('transaction-receipt');
+            DOM.keypadInputDisplay = document.getElementById('keypad-input');
+            DOM.keypadButtons = document.querySelectorAll('.key-btn');
+            DOM.coinButtons = document.querySelectorAll('.coin-btn');
+            DOM.clearButton = document.getElementById('clear-btn');
+            DOM.enterButton = document.getElementById('enter-btn');
+            DOM.returnChangeButton = document.getElementById('return-change-btn');
+            DOM.creditCardButton = document.getElementById('credit-card-btn');
+            DOM.productsGrid = document.getElementById('products-grid'); 
+            DOM.animationContainer = document.getElementById('dispensed-product-animation');
+            DOM.animatedImage = document.getElementById('animated-product-image');
+            DOM.vendingMachine = document.querySelector('.vending-machine');
+        }
+
+        // --- Core Functions ---
+
+        function updateBalanceDisplay() {
+            DOM.balanceDisplay.textContent = `${CURRENCY_SYMBOL} ${currentBalance}`;
+        }
+
+        function displayMessage(msg) {
+            DOM.messageDisplay.textContent = msg;
+        }
+        
+        function renderProductCards() {
+            DOM.productsGrid.innerHTML = ''; 
+            for (const code in inventory) {
+                const item = inventory[code];
+                const card = document.createElement('div');
+                card.classList.add('product-card');
+                card.setAttribute('data-code', code);
+                
+                if (item.stock <= 0) {
+                    card.classList.add('sold-out');
+                }
+
+                card.innerHTML = `
+                    <p class="code">${code}</p>
+                    <img src="${item.image_url}" onerror="this.onerror=null; this.src='https://via.placeholder.com/60/CCCCCC/000000?text=ERR'" alt="${item.name}">
+                    <div class="product-info">
+                        <p class="name">${item.name}</p>
+                        <p class="price">${item.stock > 0 ? `${CURRENCY_SYMBOL} ${item.price}` : 'SOLD OUT'}</p>
+                    </div>
+                `;
+                
+                card.addEventListener('click', () => handleProductSelect(code, item));
+
+                DOM.productsGrid.appendChild(card);
+            }
+        }
+
+        function calculateChange(amount) {
+            let remaining = amount;
+            let details = 'Change Breakdown:\n';
+
+            DENOMINATIONS.forEach(denom => {
+                if (remaining >= denom) {
+                    const count = Math.floor(remaining / denom);
+                    remaining %= denom;
+                    details += `  ${CURRENCY_SYMBOL} ${denom}: x${count}\n`;
+                }
+            });
+            return { details: details };
+        }
+        
+        function generateReceipt(item, method, amountPaid, change) {
+            const now = new Date();
+            const dateTime = now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
+
+            let receipt = `
+=================================
+  NTD VENDING STATION RECEIPT
+=================================
+Time: ${dateTime}
+Item: ${item.name} (${item.code})
+Price: ${CURRENCY_SYMBOL} ${item.price}
+---------------------------------
+Payment Method: ${method}
+Amount Paid:    ${CURRENCY_SYMBOL} ${amountPaid}
+Change Due:     ${CURRENCY_SYMBOL} ${change}
+---------------------------------
+      THANK YOU FOR YOUR PURCHASE!
+=================================
+            `.trim();
+            
+            DOM.transactionReceipt.textContent = receipt;
+        }
+
+        function animateProductDrop(itemCode) {
+            const item = inventory[itemCode];
+            const targetCard = DOM.productsGrid.querySelector(`[data-code="${itemCode}"]`);
+            
+            if (!targetCard || !item) return;
+
+            // Calculate position relative to the vending machine
+            const cardRect = targetCard.getBoundingClientRect();
+            const machineRect = DOM.vendingMachine.getBoundingClientRect();
+            
+            // Calculate initial top and left for the animation container
+            const initialTop = cardRect.top - machineRect.top;
+            const initialLeft = cardRect.left - machineRect.left + (cardRect.width / 2);
+
+            // Setup the animation element
+            DOM.animatedImage.src = item.image_url;
+            DOM.animationContainer.style.top = `${initialTop}px`;
+            DOM.animationContainer.style.left = `${initialLeft}px`;
+            DOM.animationContainer.style.display = 'block';
+            DOM.animationContainer.style.opacity = 1;
+            
+            // Re-trigger animation
+            DOM.animationContainer.style.animation = 'none';
+            void DOM.animationContainer.offsetWidth; 
+            DOM.animationContainer.style.animation = `productDrop ${ANIMATION_DURATION_MS / 1000}s ease-in-out forwards`;
+
+            // Hide after animation
+            setTimeout(() => {
+                DOM.animationContainer.style.display = 'none';
+                DOM.animationContainer.style.animation = 'none';
+            }, ANIMATION_DURATION_MS); 
+        }
+
+        // --- Event Handlers (Refactored) ---
+
+        function handleProductSelect(code, item) {
+            if (item.stock > 0) {
+                keypadValue = code; 
+                DOM.keypadInputDisplay.textContent = keypadValue;
+                displayMessage(`Selected ${item.name}. Choose CASH (ENTER) or PAY WITH CARD.`);
+                // Clear receipt on new selection
+                DOM.transactionReceipt.textContent = '';
+            } else {
+                displayMessage(`${item.name} (${code}) is SOLD OUT.`);
+            }
+        }
+
+        function handleCardPayment() {
+            if (keypadValue.length !== 2) {
+                displayMessage('Please enter a valid 2-digit item code (e.g., A1) first.');
+                return;
+            }
+
+            const itemCode = keypadValue.toUpperCase();
+            
+            const item = inventory[itemCode];
+
+            if (!item) {
+                displayMessage(`Error: Code ${itemCode} not found.`);
+                return;
+            }
+
+            if (item.stock <= 0) {
+                displayMessage(`${item.name} (${itemCode}) is SOLD OUT.`);
+                return;
+            }
+
+            // Clear keypad and begin processing
+            keypadValue = ''; 
+            DOM.keypadInputDisplay.textContent = '';
+            displayMessage(`Processing card for ${item.name} (${CURRENCY_SYMBOL} ${item.price})...`);
+            
+            // Disable relevant buttons during processing
+            DOM.creditCardButton.disabled = true;
+            DOM.enterButton.disabled = true;
+            
+            // Temporarily assign code for receipt generation
+            item.code = itemCode; 
+
+            setTimeout(() => {
+                DOM.creditCardButton.disabled = false;
+                DOM.enterButton.disabled = false;
+                
+                // 1. Start animation
+                animateProductDrop(itemCode); 
+                
+                // 2. Update state 
+                item.stock--; 
+
+                // 3. Update display with a delay
+                setTimeout(() => {
+                    DOM.dispensedItemDisplay.textContent = `${item.name} (${itemCode})`;
+                    DOM.changeReturnedDisplay.textContent = `${CURRENCY_SYMBOL} 0`;
+                    DOM.changeDetailsDisplay.textContent = `Payment successful via Credit Card. Price: ${CURRENCY_SYMBOL} ${item.price}`;
+                    
+                    // GENERATE RECEIPT FOR CARD
+                    generateReceipt(item, 'Credit Card', item.price, 0); 
+                    
+                    displayMessage(`Card Approved! Enjoy your ${item.name}.`);
+                    updateBalanceDisplay(); 
+                    renderProductCards(); 
+                }, ANIMATION_DURATION_MS * 0.9);
+                
+            }, 1500); // 1.5 second delay for "card processing" simulation
+        }
+
+        function handlePurchaseAttempt() {
+            // Check if a code has been entered
+            if (keypadValue.length !== 2) {
+                displayMessage('Please enter a valid 2-digit item code (e.g., A1) first.');
+                return;
+            }
+
+            const itemCode = keypadValue.toUpperCase();
+            keypadValue = ''; 
+            DOM.keypadInputDisplay.textContent = '';
+
+            const item = inventory[itemCode];
+
+            if (!item) {
+                displayMessage(`Error: Code ${itemCode} not found.`);
+                return;
+            }
+            if (item.stock <= 0) {
+                displayMessage(`${item.name} (${itemCode}) is SOLD OUT.`);
+                return;
+            }
+            
+            // Temporarily assign code for receipt generation
+            item.code = itemCode; 
+
+            // CASH PAYMENT LOGIC
+            if (currentBalance >= item.price) {
+                const purchasePrice = item.price;
+                const changeAmount = currentBalance - purchasePrice;
+                const amountPaid = currentBalance;
+                
+                // 1. Start animation immediately
+                animateProductDrop(itemCode); 
+                
+                // 2. Update state and calculate change
+                currentBalance = 0; 
+                item.stock--; 
+                const changeData = calculateChange(changeAmount);
+
+                // 3. Update display with a delay
+                setTimeout(() => {
+                    DOM.dispensedItemDisplay.textContent = `${item.name} (${itemCode})`;
+                    DOM.changeReturnedDisplay.textContent = `${CURRENCY_SYMBOL} ${changeAmount}`;
+                    DOM.changeDetailsDisplay.textContent = changeData.details;
+                    
+                    // GENERATE RECEIPT FOR CASH
+                    generateReceipt(item, 'Cash', amountPaid, changeAmount); 
+
+                    displayMessage(`Success! Dispensing ${item.name}. Change: ${CURRENCY_SYMBOL} ${changeAmount}.`);
+                    updateBalanceDisplay(); 
+                    renderProductCards(); 
+                }, ANIMATION_DURATION_MS * 0.9); // Slightly before animation finishes
+
+            } else {
+                const needed = item.price - currentBalance;
+                displayMessage(`Need ${CURRENCY_SYMBOL} ${needed} more for ${item.name}, or use the 'PAY WITH CARD' button.`);
+                DOM.changeDetailsDisplay.textContent = `Price: ${CURRENCY_SYMBOL} ${item.price}`;
+                DOM.dispensedItemDisplay.textContent = '---';
+                DOM.changeReturnedDisplay.textContent = `${CURRENCY_SYMBOL} 0`;
+                DOM.transactionReceipt.textContent = '';
+            }
+        }
+        
+        function handleMoneyReturn() {
+            if (currentBalance > 0) {
+                const change = currentBalance;
+                const changeData = calculateChange(change);
+                
+                currentBalance = 0; 
+
+                DOM.dispensedItemDisplay.textContent = '---';
+                DOM.changeReturnedDisplay.textContent = `${CURRENCY_SYMBOL} ${change}`;
+                DOM.changeDetailsDisplay.textContent = changeData.details;
+                DOM.transactionReceipt.textContent = ''; // Clear receipt
+                displayMessage(`Returned ${CURRENCY_SYMBOL} ${change} in change.`);
+                updateBalanceDisplay(); 
+            } else {
+                displayMessage('No money to return.');
+            }
+        }
+        
+        function handleClear() {
+            keypadValue = '';
+            DOM.keypadInputDisplay.textContent = '';
+            DOM.dispensedItemDisplay.textContent = '---';
+            DOM.changeReturnedDisplay.textContent = `${CURRENCY_SYMBOL} 0`;
+            DOM.changeDetailsDisplay.textContent = '';
+            DOM.transactionReceipt.textContent = ''; // Clear receipt
+            displayMessage('Ready. Enter code or insert money.');
+        }
+
+        // --- Initialization ---
+        function initEventHandlers() {
+            DOM.keypadButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const key = button.getAttribute('data-key');
+                    if (keypadValue.length < 2) { 
+                        keypadValue += key;
+                        DOM.keypadInputDisplay.textContent = keypadValue;
+                    }
+                    displayMessage('Keypad: Enter item code (e.g., A1)');
+                });
+            });
+
+            DOM.coinButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const value = parseInt(button.getAttribute('data-value'));
+                    currentBalance += value;
+                    updateBalanceDisplay();
+                    displayMessage(`Inserted ${CURRENCY_SYMBOL} ${value}. Current balance: ${CURRENCY_SYMBOL} ${currentBalance}.`);
+                    DOM.changeReturnedDisplay.textContent = `${CURRENCY_SYMBOL} 0`;
+                    DOM.changeDetailsDisplay.textContent = '';
+                    DOM.dispensedItemDisplay.textContent = '---';
+                    DOM.transactionReceipt.textContent = '';
+                });
+            });
+            
+            DOM.enterButton.addEventListener('click', handlePurchaseAttempt);
+            DOM.creditCardButton.addEventListener('click', handleCardPayment); 
+            DOM.returnChangeButton.addEventListener('click', handleMoneyReturn);
+            DOM.clearButton.addEventListener('click', handleClear);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            getDOMElements();
+            initEventHandlers();
+            updateBalanceDisplay();
+            renderProductCards(); 
+        });
+    </script>
+</body>
+</html>
